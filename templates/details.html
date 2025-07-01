@@ -584,19 +584,19 @@
         
         .stats-table th,
         .stats-table td {
-            padding: 4px 2px !important;
+            padding: 3px 1px !important;
             font-size: 0.55rem !important;
         }
         
         .stats-table th {
-            font-size: 0.6rem !important;
-            padding: 6px 2px !important;
+            font-size: 0.55rem !important;
+            padding: 4px 1px !important;
         }
         
         .stats-table th:nth-child(1),
         .stats-table td:nth-child(1) {
-            width: 75px !important;
-            font-size: 0.55rem !important;
+            width: 65px !important;
+            font-size: 0.5rem !important;
         }
     }
 
@@ -1000,6 +1000,13 @@
                                 <td><span class="position">{{ batter.position }}</span></td>
                                 {% set avg_val = batter.get('stats', {}).get('7', {}).get('avg', '.000')|float %}
                                 <td {% if avg_val > 0.265 %}class="stat-good"{% elif avg_val < 0.240 and avg_val > 0 %}class="stat-bad"{% endif %}>{{ "%.3f"|format(avg_val) }}</td>
+
+                                {% set slg_val = batter.get('stats', {}).get('7', {}).get('slg', '.000')|float %}
+                                <td {% if slg_val > 0.450 %}class="stat-good"{% elif slg_val < 0.380 and slg_val > 0 %}class="stat-bad"{% endif %}>{{ "%.3f"|format(slg_val) }}</td>
+
+                                {% set obp_val = batter.get('stats', {}).get('7', {}).get('obp', '.000')|float %}
+                                <td {% if obp_val > 0.340 %}class="stat-good"{% elif obp_val < 0.300 and obp_val > 0 %}class="stat-bad"{% endif %}>{{ "%.3f"|format(obp_val) }}</td>
+
                                 <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('slg', '.000')|float) }}</td>
                                 <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('obp', '.000')|float) }}</td>
                                 <td>{{ batter.get('stats', {}).get('7', {}).get('hr', '0') }}</td>
@@ -1176,6 +1183,13 @@
                                 <td><span class="position">{{ batter.position }}</span></td>
                                 {% set avg_val = batter.get('stats', {}).get('7', {}).get('avg', '.000')|float %}
                                 <td {% if avg_val > 0.265 %}class="stat-good"{% elif avg_val < 0.240 and avg_val > 0 %}class="stat-bad"{% endif %}>{{ "%.3f"|format(avg_val) }}</td>
+
+                                {% set slg_val = batter.get('stats', {}).get('7', {}).get('slg', '.000')|float %}
+                                <td {% if slg_val > 0.450 %}class="stat-good"{% elif slg_val < 0.380 and slg_val > 0 %}class="stat-bad"{% endif %}>{{ "%.3f"|format(slg_val) }}</td>
+
+                                {% set obp_val = batter.get('stats', {}).get('7', {}).get('obp', '.000')|float %}
+                                <td {% if obp_val > 0.340 %}class="stat-good"{% elif obp_val < 0.300 and obp_val > 0 %}class="stat-bad"{% endif %}>{{ "%.3f"|format(obp_val) }}</td>
+
                                 <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('slg', '.000')|float) }}</td>
                                 <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('obp', '.000')|float) }}</td>
                                 <td>{{ batter.get('stats', {}).get('7', {}).get('hr', '0') }}</td>
