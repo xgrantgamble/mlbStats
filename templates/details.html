@@ -585,11 +585,11 @@
         .stats-table th,
         .stats-table td {
             padding: 4px 2px !important;
-            font-size: 0.6rem !important;
+            font-size: 0.55rem !important;
         }
         
         .stats-table th {
-            font-size: 0.65rem !important;
+            font-size: 0.6rem !important;
             padding: 6px 2px !important;
         }
         
@@ -1739,6 +1739,22 @@ function updateBatterTable(table, batters, days) {
             cells[2].classList.add('stat-good');
         } else if (avg_val < 0.240 && avg_val > 0) {
             cells[2].classList.add('stat-bad');
+        }
+
+        // SLG formatting
+        const slg_val = parseFloat(stats.slg || 0);
+        if (slg_val > 0.450) {
+            cells[3].classList.add('stat-good');
+        } else if (slg_val < 0.380 && slg_val > 0) {
+            cells[3].classList.add('stat-bad');
+        }
+
+        // OBP formatting
+        const obp_val = parseFloat(stats.obp || 0);
+        if (obp_val > 0.340) {
+            cells[4].classList.add('stat-good');
+        } else if (obp_val < 0.300 && obp_val > 0) {
+            cells[4].classList.add('stat-bad');
         }
     });
     
