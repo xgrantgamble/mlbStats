@@ -1317,12 +1317,12 @@ def load_stats_api(home_id, away_id, days):
         num_starts = pitcher_starts_map[days]
         
         # Load batter stats (keep existing logic for batters)
-        home_batters = load_player_stats_by_games(home_roster['batters'][:15], 'hitting', days, max_workers=5)
-        away_batters = load_player_stats_by_games(away_roster['batters'][:15], 'hitting', days, max_workers=5)
+        home_batters = load_player_stats_by_games(home_roster['batters'][:15], 'hitting', days, max_workers=8)
+        away_batters = load_player_stats_by_games(away_roster['batters'][:15], 'hitting', days, max_workers=8)
         
         # Load pitcher stats using new starts-based logic - PASS DAYS PARAMETER
-        home_pitchers = load_pitcher_stats_by_starts(home_roster['pitchers'][:15], num_starts, days, max_workers=5)
-        away_pitchers = load_pitcher_stats_by_starts(away_roster['pitchers'][:15], num_starts, days, max_workers=5)
+        home_pitchers = load_pitcher_stats_by_starts(home_roster['pitchers'][:15], num_starts, days, max_workers=8)
+        away_pitchers = load_pitcher_stats_by_starts(away_roster['pitchers'][:15], num_starts, days, max_workers=8)
         
         # Calculate rolling team stats with team-specific variance
         random.seed(home_id + days)  # Consistent seed for reproducible stats
