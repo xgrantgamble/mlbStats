@@ -115,7 +115,7 @@ class MLBStatsAPI:
     """MLB Stats API integration class with improved error handling and performance"""
     
     @staticmethod
-    def _make_api_request(url, params=None, timeout=10):
+    def _make_api_request(url, params=None, timeout=5):
         """Make API request with rate limiting and error handling"""
         rate_limiter.wait_if_needed()
         
@@ -131,7 +131,7 @@ class MLBStatsAPI:
             raise
     
     @staticmethod
-    @cache.memoize(timeout=180)
+    @cache.memoize(timeout=86400)
     def get_todays_games():
         """Get today's MLB games with improved error handling"""
         try:
@@ -212,7 +212,7 @@ class MLBStatsAPI:
             return {'batters': [], 'pitchers': []}
         
     @staticmethod
-    @cache.memoize(timeout=21600)
+    @cache.memoize(timeout=86400)
     def get_player_stats(player_id, stat_type='hitting', days=7):
         """Get player stats with fallback handling"""
         try:
@@ -244,7 +244,7 @@ class MLBStatsAPI:
             return MLBStatsAPI.get_season_stats(player_id, stat_type)
     
     @staticmethod
-    @cache.memoize(timeout=21600)
+    @cache.memoize(timeout=86400)
     def get_player_stats_by_games(player_id, stat_type='hitting', num_games=7):
         """Get player stats from last N games played (not calendar days)"""
         try:
@@ -290,7 +290,7 @@ class MLBStatsAPI:
             return MLBStatsAPI.get_season_stats(player_id, stat_type)
 
     @staticmethod
-    @cache.memoize(timeout=21600)
+    @cache.memoize(timeout=86400)
     def get_pitcher_stats_by_starts(player_id, num_starts=2):
         """Get pitcher stats from last N starts/appearances"""
         try:
@@ -336,7 +336,7 @@ class MLBStatsAPI:
             return MLBStatsAPI.get_season_stats(player_id, 'pitching')
 
     @staticmethod
-    @cache.memoize(timeout=43200)
+    @cache.memoize(timeout=86400)
     def get_season_stats(player_id, stat_type='hitting'):
         """Get player season stats as fallback"""
         try:
@@ -536,7 +536,7 @@ class MLBStatsAPI:
             return MLBStatsAPI._get_default_stats('pitching')
 
     @staticmethod
-    @cache.memoize(timeout=21600)
+    @cache.memoize(timeout=86400)
     def get_team_stats(team_id, season=2025):
         """Get team season stats with better error handling"""
         try:
@@ -800,7 +800,7 @@ def load_player_stats_batch(players, stat_type, days=7, max_workers=5):
                 player['stats'] = {str(days): stats}
                 
                 # ADD VALIDATION HERE - This is the key addition
-                player['stats'] = validate_and_fix_stats(player['stats'], stat_type)
+                #player['stats'] = validate_and_fix_stats(player['stats'], stat_type)
                 
                 results.append(player)
             except Exception as e:
@@ -831,7 +831,7 @@ def load_player_stats_by_games(players, stat_type, num_games=7, max_workers=5):
                 player['stats'] = {str(num_games): stats}
                 
                 # ADD VALIDATION HERE
-                player['stats'] = validate_and_fix_stats(player['stats'], stat_type)
+                #player['stats'] = validate_and_fix_stats(player['stats'], stat_type)
                 
                 results.append(player)
             except Exception as e:
@@ -865,7 +865,7 @@ def load_pitcher_stats_by_starts(players, num_starts=2, days=None, max_workers=5
                 player['stats'] = {stats_key: stats}
                 
                 # ADD VALIDATION HERE - This is the key addition
-                player['stats'] = validate_and_fix_stats(player['stats'], 'pitching')
+                #player['stats'] = validate_and_fix_stats(player['stats'], 'pitching')
                 
                 results.append(player)
             except Exception as e:
@@ -1850,6 +1850,43 @@ def warm_cache_on_startup():
         except Exception as e:
             print(f"❌ Cache warming failed: {e}")
 
+def daily_cache_refresh():
+    """Refresh cache once daily at 9 AM EST"""
+    while True:
+        try:
+            # Get current time in EST
+            est = pytz.timezone('US/Eastern')
+            now = datetime.now(est)
+            
+            # Calculate time until next 9 AM EST
+            target_time = now.replace(hour=9, minute=0, second=0, microsecond=0)
+            
+            # If it's past 9 AM today, target tomorrow's 9 AM
+            if now >= target_time:
+                target_time += timedelta(days=1)
+            
+            # Calculate seconds until target time
+            wait_seconds = (target_time - now).total_seconds()
+            
+            print(f"⏰ Next cache refresh scheduled for {target_time.strftime('%Y-%m-%d %I:%M %p EST')}")
+            print(f"   Waiting {wait_seconds/3600:.1f} hours...")
+            
+            # Wait until 9 AM EST
+            time.sleep(wait_seconds)
+            
+            # Refresh cache
+            print("\n🌅 9 AM EST - Starting daily cache refresh...")
+            with app.app_context():
+                cache.clear()  # Clear old cache
+                warm_cache_on_startup()  # Warm with fresh data
+                
+            print("✅ Daily cache refresh complete!")
+            
+        except Exception as e:
+            print(f"❌ Daily refresh error: {e}")
+            # Wait an hour before trying again if error
+            time.sleep(3600)
+
 # App startup
 if __name__ == '__main__':
     print("Starting MLB Stats Tracker...")
@@ -1866,6 +1903,9 @@ if __name__ == '__main__':
 
     # ADD THIS LINE - Start cache warming in background
     threading.Thread(target=warm_cache_on_startup, daemon=True).start()
+
+    # Start daily refresh thread (9 AM EST)
+    threading.Thread(target=daily_cache_refresh, daemon=True).start()
     
     # Use Railway's PORT if available, otherwise default to 5005
     port = int(os.environ.get('PORT', 5005))
