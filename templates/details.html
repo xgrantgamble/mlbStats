@@ -456,7 +456,7 @@
             max-width: 100% !important;
             box-sizing: border-box !important;
         }
-        
+        /* Comment out or remove this block
         .stats-table thead,
         .stats-table tbody,
         .stats-table tr {
@@ -464,6 +464,7 @@
             width: 100% !important;
             table-layout: fixed !important;
         }
+        */
         
         .stats-table th,
         .stats-table td {
@@ -1007,8 +1008,7 @@
                                 {% set obp_val = batter.get('stats', {}).get('7', {}).get('obp', '.000')|float %}
                                 <td {% if obp_val > 0.340 %}class="stat-good"{% elif obp_val < 0.300 and obp_val > 0 %}class="stat-bad"{% endif %}>{{ "%.3f"|format(obp_val) }}</td>
 
-                                <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('slg', '.000')|float) }}</td>
-                                <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('obp', '.000')|float) }}</td>
+                                
                                 <td>{{ batter.get('stats', {}).get('7', {}).get('hr', '0') }}</td>
                                 <td>{{ batter.get('stats', {}).get('7', {}).get('rbi', '0') }}</td>
                                 <td>{{ batter.get('stats', {}).get('7', {}).get('h', '0') }}</td>
@@ -1190,8 +1190,7 @@
                                 {% set obp_val = batter.get('stats', {}).get('7', {}).get('obp', '.000')|float %}
                                 <td {% if obp_val > 0.340 %}class="stat-good"{% elif obp_val < 0.300 and obp_val > 0 %}class="stat-bad"{% endif %}>{{ "%.3f"|format(obp_val) }}</td>
 
-                                <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('slg', '.000')|float) }}</td>
-                                <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('obp', '.000')|float) }}</td>
+                                
                                 <td>{{ batter.get('stats', {}).get('7', {}).get('hr', '0') }}</td>
                                 <td>{{ batter.get('stats', {}).get('7', {}).get('rbi', '0') }}</td>
                                 <td>{{ batter.get('stats', {}).get('7', {}).get('h', '0') }}</td>
