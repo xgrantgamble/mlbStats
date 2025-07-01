@@ -1816,6 +1816,40 @@ def debug_check_display():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def warm_cache_on_startup():
+    """Pre-load ALL today's games into cache on startup"""
+    with app.app_context():
+        try:
+            print("🔥 Warming cache for ALL today's games...")
+            games = MLBStatsAPI.get_todays_games()
+            
+            print(f"Found {len(games)} games today")
+            
+            for i, game in enumerate(games):
+                try:
+                    if game.get('status') == 'postponed':
+                        print(f"⏭️  Skipping postponed game: {game['away_team']} @ {game['home_team']}")
+                        continue
+                    
+                    print(f"Loading game {i+1}/{len(games)}: {game['away_team']} @ {game['home_team']}...", end='')
+                    
+                    MLBStatsAPI.get_team_roster(game['home_id'])
+                    MLBStatsAPI.get_team_roster(game['away_id'])
+                    MLBStatsAPI.get_team_stats(game['home_id'])
+                    MLBStatsAPI.get_team_stats(game['away_id'])
+                    
+                    print(" ✓")
+                    time.sleep(0.5)
+                    
+                except Exception as e:
+                    print(f" ✗ Failed: {e}")
+                    continue
+                    
+            print("✅ Cache warming complete for ALL games!")
+            
+        except Exception as e:
+            print(f"❌ Cache warming failed: {e}")
+
 # App startup
 if __name__ == '__main__':
     print("Starting MLB Stats Tracker...")
@@ -1829,6 +1863,9 @@ if __name__ == '__main__':
         print(f"  {route.rule} -> {route.endpoint}")
     
     print("✅ Starting Flask server...")
+
+    # ADD THIS LINE - Start cache warming in background
+    threading.Thread(target=warm_cache_on_startup, daemon=True).start()
     
     # Use Railway's PORT if available, otherwise default to 5005
     port = int(os.environ.get('PORT', 5005))
