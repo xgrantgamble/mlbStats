@@ -1,0 +1,4 @@
+Flask==2.3.2
+Flask-Caching==2.0.2
+requests==2.31.0
+pytz==2023.3

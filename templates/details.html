@@ -1,0 +1,1838 @@
+{% extends "base.html" %}
+
+{% block title %}{{ home_team.name }} vs {{ away_team.name }} - Details{% endblock %}
+
+{% block extra_css %}
+<style>
+    .team-view {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .team-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f4f8;
+    }
+    
+    /* Team Comparison Cards */
+    .team-comparison {
+        display: flex;
+        gap: 32px;
+        margin-bottom: 30px;
+        justify-content: center;
+    }
+    
+    .team-card {
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        background: #fafcfe;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        padding: 25px;
+        min-width: 320px;
+        text-align: center;
+        flex: 1;
+        max-width: 400px;
+    }
+    
+    .team-card h4 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 1.4rem;
+        font-weight: bold;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 10px;
+    }
+    
+    .team-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        font-size: 1rem;
+        margin-bottom: 25px;
+    }
+    
+    .stat-item {
+        padding: 12px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+        transition: transform 0.2s ease;
+    }
+    
+    .stat-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .stat-label {
+        font-weight: bold;
+        color: #667eea;
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+    }
+    
+    .stat-value {
+        font-size: 1.3rem;
+        color: #333;
+        font-weight: bold;
+    }
+    
+    /* Stats Controls */
+    .stats-controls {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 25px;
+        justify-content: center;
+    }
+    
+    .tab-btn {
+        padding: 12px 24px;
+        border: 2px solid #667eea;
+        background: white;
+        color: #667eea;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    .tab-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .tab-btn.active-tab {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* Roster Tables */
+    .roster-section {
+        margin-bottom: 40px;
+    }
+    
+    .section-title {
+        font-size: 1.6rem;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #667eea;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .roster-columns {
+        display: flex;
+        gap: 40px;
+        align-items: flex-start;
+    }
+    
+    .team-column {
+        flex: 1;
+        min-width: 400px;
+    }
+    
+    .team-column h4 {
+        color: white;
+        margin-bottom: 15px;
+        font-size: 1.3rem;
+        text-align: center;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        font-weight: bold;
+    }
+    
+    .stats-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #f8f9fa;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 25px;
+    }
+    
+    .stats-table th {
+        background: #667eea;
+        color: white;
+        padding: 12px 8px;
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .stats-table td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #dee2e6;
+        font-size: 0.9rem;
+        text-align: center;
+        transition: background-color 0.2s ease;
+    }
+    
+    .stats-table tr:hover {
+        background: #e9ecef;
+    }
+    
+    .player-name {
+        font-weight: 600;
+        color: #333;
+        text-align: left !important;
+    }
+    
+    .position {
+        background: #e9ecef;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        color: #666;
+    }
+    
+    .favorite-control {
+        text-align: center;
+    }
+    
+    .favorite-checkbox {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 1rem;
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .favorite-checkbox input[type="checkbox"] {
+        transform: scale(1.2);
+    }
+    
+    .stat-good {
+        background-color: #d4edda !important;
+        color: #155724;
+        font-weight: bold;
+    }
+    
+    .stat-bad {
+        background-color: #f8d7da !important;
+        color: #721c24;
+        font-weight: bold;
+    }
+
+    .stat-light-red {
+        background-color: #f5c6cb !important;
+        color: #856404;
+        font-weight: bold;
+    }
+    
+    .loading-message {
+        text-align: center;
+        color: #666;
+        font-style: italic;
+        padding: 8px;
+        font-size: 0.8rem;
+    }
+
+    /* Add this to your CSS to prevent loading-message interference */
+    .stats-table td:not(.loading-message) {
+        font-style: normal !important;
+        color: #333 !important;
+    }
+
+    /* Ensure loading messages are properly cleared */
+    .stats-table td.loading-message {
+        font-style: italic;
+        color: #666;
+    }
+
+    /* Force text alignment for stats */
+    .stats-table td[data-stat] {
+        text-align: center !important;
+        font-style: normal !important;
+    }
+    
+    /* Loading spinner */
+    .loading-spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 8px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Game History Styles */
+    .game-history-container {
+        margin: 15px 0;
+        text-align: center;
+    }
+    
+    .game-history {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding: 10px 0;
+    }
+    
+    .game-result {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.8rem;
+    }
+    
+    .team-logo-small {
+        width: 30px;
+        height: 30px;
+        background: #e0e0e0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: bold;
+        color: #666;
+        margin-bottom: 2px;
+        border: 2px solid #ddd;
+    }
+    
+    .result-emoji {
+        font-size: 16px;
+        margin-bottom: 2px;
+    }
+    
+    .game-date {
+        font-size: 0.7rem;
+        color: #666;
+    }
+    
+    .season-record {
+        font-size: 1.2rem;
+        color: #666;
+        margin: 15px 0;
+        font-weight: 600;
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+        .container {
+            padding: 10px !important;
+        }
+        
+        .team-view {
+            padding: 15px !important;
+            margin: 0 10px !important;
+        }
+        
+        .team-header {
+            flex-direction: column !important;
+            gap: 10px !important;
+            text-align: center !important;
+            margin: 0 10px 20px 10px !important;
+        }
+        
+        .team-header h2 {
+            font-size: 1.5rem !important;
+            margin: 0 !important;
+        }
+        
+        .stats-controls {
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+            justify-content: center !important;
+            margin: 0 10px 20px 10px !important;
+        }
+        
+        .tab-btn {
+            padding: 10px 16px !important;
+            font-size: 0.9rem !important;
+            flex: 1 !important;
+            min-width: 90px !important;
+            max-width: 130px !important;
+        }
+        
+        .team-comparison {
+            flex-direction: column !important;
+            gap: 20px !important;
+        }
+        
+        .team-card {
+            min-width: auto !important;
+            width: 100% !important;
+            padding: 20px !important;
+            margin: 0 !important;
+        }
+        
+        .team-stats {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 10px !important;
+        }
+        
+        .stat-item {
+            padding: 10px !important;
+        }
+        
+        .stat-value {
+            font-size: 1.2rem !important;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem !important;
+        }
+        
+        .game-history {
+            gap: 8px !important;
+            padding: 8px 0 !important;
+        }
+        
+        .team-logo-small {
+            width: 28px !important;
+            height: 28px !important;
+            font-size: 0.65rem !important;
+        }
+        
+        .result-emoji {
+            font-size: 15px !important;
+        }
+        
+        .game-date {
+            font-size: 0.7rem !important;
+        }
+        
+        .season-record {
+            font-size: 1.1rem !important;
+            margin: 12px 0 !important;
+        }
+        
+        .section-title {
+            font-size: 1.3rem !important;
+            margin: 0 10px 20px 10px !important;
+        }
+        
+        .roster-columns {
+            flex-direction: column !important;
+            gap: 30px !important;
+        }
+        
+        .team-column {
+            min-width: auto !important;
+            width: 100% !important;
+            margin: 0 !important;
+        }
+        
+        .team-column h4 {
+            font-size: 1.1rem !important;
+            padding: 10px !important;
+            margin: 0 0 15px 0 !important;
+        }
+        
+        .stats-table {
+            font-size: 0.7rem !important;
+            width: 100% !important;
+            display: block !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            border-radius: 8px !important;
+            margin: 0 0 25px 0 !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        
+        .stats-table thead,
+        .stats-table tbody,
+        .stats-table tr {
+            display: table !important;
+            width: 100% !important;
+            table-layout: fixed !important;
+        }
+        
+        .stats-table th,
+        .stats-table td {
+            padding: 6px 4px !important;
+            font-size: 0.65rem !important;
+            text-align: center !important;
+            border-right: 1px solid #e0e0e0 !important;
+        }
+        
+        .stats-table th {
+            font-size: 0.7rem !important;
+            padding: 8px 4px !important;
+        }
+        
+        .stats-table:has(th:nth-child(9)) th:nth-child(1),
+        .stats-table:has(th:nth-child(9)) td:nth-child(1) {
+            width: 90px !important;
+            text-align: left !important;
+            position: sticky !important;
+            left: 0 !important;
+            background: #f8f9fa !important;
+            z-index: 2 !important;
+        }
+        
+        .stats-table:has(th:nth-child(9)) th:nth-child(2),
+        .stats-table:has(th:nth-child(9)) td:nth-child(2) {
+            width: 35px !important;
+        }
+        
+        .stats-table:has(th:nth-child(9)) th:nth-child(n+3),
+        .stats-table:has(th:nth-child(9)) td:nth-child(n+3) {
+            width: 45px !important;
+        }
+        
+        .stats-table:has(th:nth-child(10)) th:nth-child(1),
+        .stats-table:has(th:nth-child(10)) td:nth-child(1) {
+            width: 90px !important;
+            text-align: left !important;
+            position: sticky !important;
+            left: 0 !important;
+            background: #f8f9fa !important;
+            z-index: 2 !important;
+        }
+        
+        .stats-table:has(th:nth-child(10)) th:nth-child(2),
+        .stats-table:has(th:nth-child(10)) td:nth-child(2),
+        .stats-table:has(th:nth-child(10)) th:nth-child(3),
+        .stats-table:has(th:nth-child(10)) td:nth-child(3) {
+            width: 40px !important;
+        }
+        
+        .stats-table:has(th:nth-child(10)) th:nth-child(n+4),
+        .stats-table:has(th:nth-child(10)) td:nth-child(n+4) {
+            width: 35px !important;
+        }
+        
+        .stats-table thead th:first-child {
+            background: #667eea !important;
+            position: sticky !important;
+            left: 0 !important;
+            z-index: 3 !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .team-view {
+            padding: 10px !important;
+            margin: 0 5px !important;
+        }
+        
+        .team-header h2 {
+            font-size: 1.2rem !important;
+        }
+        
+        .tab-btn {
+            padding: 8px 12px !important;
+            font-size: 0.85rem !important;
+            min-width: 80px !important;
+        }
+        
+        .team-card {
+            padding: 15px !important;
+        }
+        
+        .team-card h4 {
+            font-size: 1.2rem !important;
+        }
+        
+        .stat-item {
+            padding: 8px !important;
+        }
+        
+        .stat-value {
+            font-size: 1.1rem !important;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem !important;
+        }
+        
+        .game-history {
+            gap: 6px !important;
+        }
+        
+        .team-logo-small {
+            width: 24px !important;
+            height: 24px !important;
+            font-size: 0.6rem !important;
+        }
+        
+        .result-emoji {
+            font-size: 14px !important;
+        }
+        
+        .game-date {
+            font-size: 0.65rem !important;
+        }
+        
+        .stats-table th,
+        .stats-table td {
+            padding: 4px 2px !important;
+            font-size: 0.6rem !important;
+        }
+        
+        .stats-table th {
+            font-size: 0.65rem !important;
+            padding: 6px 2px !important;
+        }
+        
+        .stats-table th:nth-child(1),
+        .stats-table td:nth-child(1) {
+            width: 75px !important;
+            font-size: 0.55rem !important;
+        }
+    }
+
+    @media (max-width: 375px) {
+        .container {
+            padding: 5px !important;
+        }
+        
+        .team-view {
+            padding: 8px !important;
+            margin: 0 !important;
+        }
+        
+        .team-header h2 {
+            font-size: 1.1rem !important;
+        }
+        
+        .team-stats {
+            grid-template-columns: 1fr !important;
+        }
+        
+        .tab-btn {
+            font-size: 0.8rem !important;
+            padding: 6px 10px !important;
+        }
+        
+        .stats-table th:nth-child(1),
+        .stats-table td:nth-child(1) {
+            width: 65px !important;
+            font-size: 0.5rem !important;
+        }
+        
+        .player-name {
+            font-size: 0.55rem !important;
+        }
+    }
+
+    @media (max-width: 768px) and (orientation: landscape) {
+        .team-comparison {
+            flex-direction: row !important;
+        }
+        
+        .team-card {
+            width: 48% !important;
+        }
+        
+        .stats-controls {
+            margin: 0 10px 15px 10px !important;
+        }
+        
+        .roster-columns {
+            flex-direction: row !important;
+        }
+        
+        .team-column {
+            width: 48% !important;
+        }
+    }
+
+    @media print {
+        .team-view {
+            box-shadow: none !important;
+        }
+        
+        .back-btn,
+        .favorite-control,
+        .stats-controls {
+            display: none !important;
+        }
+        
+        .stats-table {
+            font-size: 10pt !important;
+        }
+        
+        .stat-good,
+        .stat-bad,
+        .stat-light-red {
+            background-color: transparent !important;
+            font-weight: bold !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="team-view">
+    <div class="team-header">
+        <h2>{{ away_team.name }} @ {{ home_team.name }}</h2>
+        <a href="{{ url_for('home') }}" class="back-btn">← Back to Games</a>
+    </div>
+    
+    <!-- Stats Period Controls -->
+    <div class="stats-controls">
+        <button class="tab-btn active-tab" id="tab-7">7 Games</button>
+        <button class="tab-btn" id="tab-10">10 Games</button>
+        <button class="tab-btn" id="tab-21">21 Games</button>
+    </div>
+    
+    <!-- Team Comparison Section -->
+    <div class="roster-section">
+        <h3 class="section-title">⚡ Team Comparison (2025 Season Stats)</h3>
+        
+        <!-- 7 Days Team Comparison -->
+        <div class="team-comparison stat-window stat-7">
+            <div class="team-card">
+                <h4>{{ away_team.name }}</h4>
+
+                <div class="game-history-container">
+                    <div class="game-history">
+                        {% for game in away_team.gameHistory.games %}
+                            <div class="game-result">
+                                <div class="team-logo-small">{{ game.opponent_abbr }}</div>
+                                <div class="result-emoji">{% if game.result == 'W' %}✅{% else %}❌{% endif %}</div>
+                                <div class="game-date">{{ game.date }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="team-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Team AVG</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('7', {}).get('AVG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team OBP</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('7', {}).get('OBP', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team SLG</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('7', {}).get('SLG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Home Runs</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('7', {}).get('HR', '0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Hits</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('7', {}).get('AVG_HITS', '0.0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg K</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('7', {}).get('AVG_K', '0.0') }}</div>
+                    </div>
+                </div>
+                <div class="favorite-control">
+                    <form method="post" action="{{ url_for('toggle_favorite') }}">
+                        <label class="favorite-checkbox">
+                            <input type="checkbox" name="favorite" value="{{ away_team.name }}"
+                                {% if away_team.name in favorites %}checked{% endif %}
+                                onchange="this.form.submit()">
+                            ⭐ Favorite this team
+                        </label>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="team-card">
+                <h4>{{ home_team.name }}</h4>
+
+                <div class="game-history-container">
+                    <div class="game-history">
+                        {% for game in home_team.gameHistory.games %}
+                            <div class="game-result">
+                                <div class="team-logo-small">{{ game.opponent_abbr }}</div>
+                                <div class="result-emoji">{% if game.result == 'W' %}✅{% else %}❌{% endif %}</div>
+                                <div class="game-date">{{ game.date }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+
+
+                <div class="team-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Team AVG</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('7', {}).get('AVG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team OBP</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('7', {}).get('OBP', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team SLG</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('7', {}).get('SLG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Home Runs</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('7', {}).get('HR', '0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Hits</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('7', {}).get('AVG_HITS', '0.0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg K</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('7', {}).get('AVG_K', '0.0') }}</div>
+                    </div>
+                </div>
+                <div class="favorite-control">
+                    <form method="post" action="{{ url_for('toggle_favorite') }}">
+                        <label class="favorite-checkbox">
+                            <input type="checkbox" name="favorite" value="{{ home_team.name }}"
+                                {% if home_team.name in favorites %}checked{% endif %}
+                                onchange="this.form.submit()">
+                            ⭐ Favorite this team
+                        </label>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 10 Days Team Comparison -->
+        <div class="team-comparison stat-window stat-10" style="display:none">
+            <div class="team-card">
+                <h4>{{ away_team.name }}</h4>
+                <div class="team-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Team AVG</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('10', {}).get('AVG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team OBP</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('10', {}).get('OBP', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team SLG</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('10', {}).get('SLG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Home Runs</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('10', {}).get('HR', '0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Hits</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('10', {}).get('AVG_HITS', '0.0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg K</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('10', {}).get('AVG_K', '0.0') }}</div>
+                    </div>
+                </div>
+                <div class="favorite-control">
+                    <form method="post" action="{{ url_for('toggle_favorite') }}">
+                        <label class="favorite-checkbox">
+                            <input type="checkbox" name="favorite" value="{{ away_team.name }}"
+                                {% if away_team.name in favorites %}checked{% endif %}
+                                onchange="this.form.submit()">
+                            ⭐ Favorite this team
+                        </label>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="team-card">
+                <h4>{{ home_team.name }}</h4>
+                <div class="team-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Team AVG</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('10', {}).get('AVG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team OBP</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('10', {}).get('OBP', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team SLG</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('10', {}).get('SLG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Home Runs</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('10', {}).get('HR', '0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Hits</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('10', {}).get('AVG_HITS', '0.0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg K</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('10', {}).get('AVG_K', '0.0') }}</div>
+                    </div>
+                </div>
+                <div class="favorite-control">
+                    <form method="post" action="{{ url_for('toggle_favorite') }}">
+                        <label class="favorite-checkbox">
+                            <input type="checkbox" name="favorite" value="{{ home_team.name }}"
+                                {% if home_team.name in favorites %}checked{% endif %}
+                                onchange="this.form.submit()">
+                            ⭐ Favorite this team
+                        </label>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 21 Days Team Comparison -->
+        <div class="team-comparison stat-window stat-21" style="display:none">
+            <div class="team-card">
+                <h4>{{ away_team.name }}</h4>
+                <div class="team-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Team AVG</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('21', {}).get('AVG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team OBP</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('21', {}).get('OBP', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team SLG</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('21', {}).get('SLG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Home Runs</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('21', {}).get('HR', '0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Hits</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('21', {}).get('AVG_HITS', '0.0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg K</div>
+                        <div class="stat-value">{{ away_team.rollingTeamStats.get('21', {}).get('AVG_K', '0.0') }}</div>
+                    </div>
+                </div>
+                <div class="favorite-control">
+                    <form method="post" action="{{ url_for('toggle_favorite') }}">
+                        <label class="favorite-checkbox">
+                            <input type="checkbox" name="favorite" value="{{ away_team.name }}"
+                                {% if away_team.name in favorites %}checked{% endif %}
+                                onchange="this.form.submit()">
+                            ⭐ Favorite this team
+                        </label>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="team-card">
+                <h4>{{ home_team.name }}</h4>
+                <div class="team-stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Team AVG</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('21', {}).get('AVG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team OBP</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('21', {}).get('OBP', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Team SLG</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('21', {}).get('SLG', '.000') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Home Runs</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('21', {}).get('HR', '0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Hits</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('21', {}).get('AVG_HITS', '0.0') }}</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg K</div>
+                        <div class="stat-value">{{ home_team.rollingTeamStats.get('21', {}).get('AVG_K', '0.0') }}</div>
+                    </div>
+                </div>
+                <div class="favorite-control">
+                    <form method="post" action="{{ url_for('toggle_favorite') }}">
+                        <label class="favorite-checkbox">
+                            <input type="checkbox" name="favorite" value="{{ home_team.name }}"
+                                {% if home_team.name in favorites %}checked{% endif %}
+                                onchange="this.form.submit()">
+                            ⭐ Favorite this team
+                        </label>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Complete Rosters -->
+    <div class="roster-section">
+        <h3 class="section-title">👥 Team Rosters (2025 Season Stats)</h3>
+        <div class="roster-columns">
+            <!-- AWAY TEAM COLUMN -->
+            <div class="team-column">
+                <h4>{{ away_team.name }} Batters</h4>
+                
+                <!-- 7 Days Batters -->
+                <div class="stat-window stat-7">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>Pos</th><th>AVG</th><th>SLG</th><th>OBP</th><th>HR</th><th>RBI</th><th>H</th><th>AB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for batter in away_team.fullRoster.batters[:15] %}
+                            <tr>
+                                <td class="player-name">{{ batter.name }}</td>
+                                <td><span class="position">{{ batter.position }}</span></td>
+                                {% set avg_val = batter.get('stats', {}).get('7', {}).get('avg', '.000')|float %}
+                                <td {% if avg_val > 0.265 %}class="stat-good"{% elif avg_val < 0.240 and avg_val > 0 %}class="stat-bad"{% endif %}>{{ "%.3f"|format(avg_val) }}</td>
+                                <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('slg', '.000')|float) }}</td>
+                                <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('obp', '.000')|float) }}</td>
+                                <td>{{ batter.get('stats', {}).get('7', {}).get('hr', '0') }}</td>
+                                <td>{{ batter.get('stats', {}).get('7', {}).get('rbi', '0') }}</td>
+                                <td>{{ batter.get('stats', {}).get('7', {}).get('h', '0') }}</td>
+                                <td>{{ batter.get('stats', {}).get('7', {}).get('ab', '0') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 10 Days Batters -->
+                <div class="stat-window stat-10" style="display:none">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>Pos</th><th>AVG</th><th>SLG</th><th>OBP</th><th>HR</th><th>RBI</th><th>H</th><th>AB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for batter in away_team.fullRoster.batters[:15] %}
+                            <tr>
+                                <td class="player-name">{{ batter.name }}</td>
+                                <td><span class="position">{{ batter.position }}</span></td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 21 Days Batters -->
+                <div class="stat-window stat-21" style="display:none">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>Pos</th><th>AVG</th><th>SLG</th><th>OBP</th><th>HR</th><th>RBI</th><th>H</th><th>AB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for batter in away_team.fullRoster.batters[:15] %}
+                            <tr>
+                                <td class="player-name">{{ batter.name }}</td>
+                                <td><span class="position">{{ batter.position }}</span></td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Away Team Pitchers -->
+                <h4 style="margin-top: 25px;">{{ away_team.name }} Pitchers</h4>
+                
+                <!-- 7 Days Pitchers -->
+                <div class="stat-window stat-7">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>ERA</th><th>WHIP</th><th>H</th><th>R</th><th>K</th><th>BB</th><th>IP</th><th>GS</th><th>SV</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pitcher in away_team.fullRoster.pitchers[:15] %}
+                            <tr>
+                                <td class="player-name">{{ pitcher.name }}</td>
+                                {% set era_val = pitcher.get('stats', {}).get('7', {}).get('era', '0.00')|float %}
+                                <td {% if era_val < 3.00 and era_val > 0 %}class="stat-good"{% elif era_val > 5.00 %}class="stat-bad"{% endif %}>{{ pitcher.get('stats', {}).get('7', {}).get('era', '0.00') }}</td>
+
+                                {% set whip_val = pitcher.get('stats', {}).get('7', {}).get('whip', '0.00')|float %}
+                                <td {% if whip_val < 1.40 and whip_val > 0 %}class="stat-good"{% elif whip_val > 1.40 %}class="stat-bad"{% endif %}>{{ pitcher.get('stats', {}).get('7', {}).get('whip', '0.00') }}</td>
+
+                                {% set hits_val = pitcher.get('stats', {}).get('7', {}).get('h', '0')|int %}
+                                <td {% if hits_val > 5 %}class="stat-light-red"{% endif %}>{{ pitcher.get('stats', {}).get('7', {}).get('h', '0') }}</td>
+
+                                {% set runs_val = pitcher.get('stats', {}).get('7', {}).get('r', '0')|int %}
+                                <td {% if runs_val > 4 %}class="stat-bad"{% endif %}>{{ pitcher.get('stats', {}).get('7', {}).get('r', '0') }}</td>
+
+                                <td>{{ pitcher.get('stats', {}).get('7', {}).get('k', '0') }}</td>
+                                <td>{{ pitcher.get('stats', {}).get('7', {}).get('bb', '0') }}</td>
+                                <td>{{ pitcher.get('stats', {}).get('7', {}).get('ip', '0.0') }}</td>
+                                <td>{{ pitcher.get('stats', {}).get('7', {}).get('gs', '0') }}</td>
+                                <td>{{ pitcher.get('stats', {}).get('7', {}).get('sv', '0') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 10 Days Pitchers -->
+                <div class="stat-window stat-10" style="display:none">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>ERA</th><th>WHIP</th><th>H</th><th>R</th><th>K</th><th>BB</th><th>IP</th><th>GS</th><th>SV</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pitcher in away_team.fullRoster.pitchers[:15] %}
+                            <tr>
+                                <td class="player-name">{{ pitcher.name }}</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 21 Days Pitchers -->
+                <div class="stat-window stat-21" style="display:none">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>ERA</th><th>WHIP</th><th>H</th><th>R</th><th>K</th><th>BB</th><th>IP</th><th>GS</th><th>SV</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pitcher in away_team.fullRoster.pitchers[:15] %}
+                            <tr>
+                                <td class="player-name">{{ pitcher.name }}</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- HOME TEAM COLUMN -->
+            <div class="team-column">
+                <h4>{{ home_team.name }} Batters</h4>
+                
+                <!-- 7 Days Batters -->
+                <div class="stat-window stat-7">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>Pos</th><th>AVG</th><th>SLG</th><th>OBP</th><th>HR</th><th>RBI</th><th>H</th><th>AB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for batter in home_team.fullRoster.batters[:15] %}
+                            <tr>
+                                <td class="player-name">{{ batter.name }}</td>
+                                <td><span class="position">{{ batter.position }}</span></td>
+                                {% set avg_val = batter.get('stats', {}).get('7', {}).get('avg', '.000')|float %}
+                                <td {% if avg_val > 0.265 %}class="stat-good"{% elif avg_val < 0.240 and avg_val > 0 %}class="stat-bad"{% endif %}>{{ "%.3f"|format(avg_val) }}</td>
+                                <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('slg', '.000')|float) }}</td>
+                                <td>{{ "%.3f"|format(batter.get('stats', {}).get('7', {}).get('obp', '.000')|float) }}</td>
+                                <td>{{ batter.get('stats', {}).get('7', {}).get('hr', '0') }}</td>
+                                <td>{{ batter.get('stats', {}).get('7', {}).get('rbi', '0') }}</td>
+                                <td>{{ batter.get('stats', {}).get('7', {}).get('h', '0') }}</td>
+                                <td>{{ batter.get('stats', {}).get('7', {}).get('ab', '0') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 10 Days Batters -->
+                <div class="stat-window stat-10" style="display:none">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>Pos</th><th>AVG</th><th>SLG</th><th>OBP</th><th>HR</th><th>RBI</th><th>H</th><th>AB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for batter in home_team.fullRoster.batters[:15] %}
+                            <tr>
+                                <td class="player-name">{{ batter.name }}</td>
+                                <td><span class="position">{{ batter.position }}</span></td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 21 Days Batters -->
+                <div class="stat-window stat-21" style="display:none">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>Pos</th><th>AVG</th><th>SLG</th><th>OBP</th><th>HR</th><th>RBI</th><th>H</th><th>AB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for batter in home_team.fullRoster.batters[:15] %}
+                            <tr>
+                                <td class="player-name">{{ batter.name }}</td>
+                                <td><span class="position">{{ batter.position }}</span></td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Home Team Pitchers -->
+                <h4 style="margin-top: 25px;">{{ home_team.name }} Pitchers</h4>
+                
+                <!-- 7 Days Pitchers -->
+                <div class="stat-window stat-7">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>ERA</th><th>WHIP</th><th>H</th><th>R</th><th>K</th><th>BB</th><th>IP</th><th>GS</th><th>SV</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pitcher in home_team.fullRoster.pitchers[:15] %}
+                            <tr>
+                                <td class="player-name">{{ pitcher.name }}</td>
+                                {% set era_val = pitcher.get('stats', {}).get('7', {}).get('era', '0.00')|float %}
+                                <td {% if era_val < 3.00 and era_val > 0 %}class="stat-good"{% elif era_val > 5.00 %}class="stat-bad"{% endif %}>{{ pitcher.get('stats', {}).get('7', {}).get('era', '0.00') }}</td>
+
+                                {% set whip_val = pitcher.get('stats', {}).get('7', {}).get('whip', '0.00')|float %}
+                                <td {% if whip_val < 1.20 and whip_val > 0 %}class="stat-good"{% elif whip_val > 1.40 %}class="stat-bad"{% endif %}>{{ pitcher.get('stats', {}).get('7', {}).get('whip', '0.00') }}</td>
+
+                                {% set hits_val = pitcher.get('stats', {}).get('7', {}).get('h', '0')|int %}
+                                <td {% if hits_val > 5 %}class="stat-light-red"{% endif %}>
+                                    {{ pitcher.get('stats', {}).get('7', {}).get('h', '0') }}
+                                </td>
+                                
+                                {% set runs_val = pitcher.get('stats', {}).get('7', {}).get('r', '0')|int %}
+                                <td {% if runs_val > 4 %}class="stat-bad"{% endif %}>
+                                    {{ pitcher.get('stats', {}).get('7', {}).get('r', '0') }}
+                                </td>
+                                <td>{{ pitcher.get('stats', {}).get('7', {}).get('k', '0') }}</td>
+                                <td>{{ pitcher.get('stats', {}).get('7', {}).get('bb', '0') }}</td>
+                                <td>{{ pitcher.get('stats', {}).get('7', {}).get('ip', '0.0') }}</td>
+                                <td>{{ pitcher.get('stats', {}).get('7', {}).get('gs', '0') }}</td>
+                                <td>{{ pitcher.get('stats', {}).get('7', {}).get('sv', '0') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 10 Days Pitchers -->
+                <div class="stat-window stat-10" style="display:none">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>ERA</th><th>WHIP</th><th>H</th><th>R</th><th>K</th><th>BB</th><th>IP</th><th>GS</th><th>SV</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pitcher in home_team.fullRoster.pitchers[:15] %}
+                            <tr>
+                                <td class="player-name">{{ pitcher.name }}</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 21 Days Pitchers -->
+                <div class="stat-window stat-21" style="display:none">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th><th>ERA</th><th>WHIP</th><th>H</th><th>R</th><th>K</th><th>BB</th><th>IP</th><th>GS</th><th>SV</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pitcher in home_team.fullRoster.pitchers[:15] %}
+                            <tr>
+                                <td class="player-name">{{ pitcher.name }}</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">Loading...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                                <td class="loading-message">...</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Pass data to external JS
+window.TEAM_DATA = {
+    homeId: {{ home_team.id|default(0) }},
+    awayId: {{ away_team.id|default(0) }},
+    homeName: {{ (home_team.name or '')|tojson|safe }},
+    awayName: {{ (away_team.name or '')|tojson|safe }}
+};
+
+// Fixed JavaScript code
+console.log('🚀 FIXED VERSION - PITCHER UPDATE 🚀');
+
+let loadedPeriods = ['7'];
+let isLoading = false;
+
+async function setStatWindow(days) {
+    if (isLoading) {
+        console.log('Already loading, skipping request');
+        return;
+    }
+    
+    console.log(`Switching to ${days}-day stats`);
+    isLoading = true;
+    
+    updateButtonStates(days, true);
+    
+    try {
+        if (!loadedPeriods.includes(days.toString())) {
+            console.log(`Loading ${days}-day stats from API`);
+            await loadStatsForPeriod(days);
+        } else {
+            console.log(`${days}-day stats already loaded`);
+        }
+        
+        switchStatWindows(days);
+        
+    } catch (error) {
+        console.error('Failed to load stats:', error);
+        showErrorMessage(`Failed to load ${days}-day stats. Please try again.`);
+    } finally {
+        isLoading = false;
+        updateButtonStates(days, false);
+    }
+}
+
+function updateButtonStates(activeDays, loading) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        const dayMatch = btn.id.match(/tab-(\d+)/);
+        if (!dayMatch) return;
+        
+        const btnDays = dayMatch[1];
+        
+        if (loading && btnDays === activeDays.toString()) {
+            btn.innerHTML = '<span class="loading-spinner"></span>Loading...';
+            btn.disabled = true;
+        } else {
+            btn.innerHTML = btnDays + ' Days';
+            btn.disabled = loading;
+            
+            if (btnDays === activeDays.toString()) {
+                btn.classList.add('active-tab');
+            } else {
+                btn.classList.remove('active-tab');
+            }
+        }
+    });
+}
+
+function switchStatWindows(days) {
+    ['7', '10', '21'].forEach(day => {
+        document.querySelectorAll(`.stat-${day}`).forEach(el => {
+            el.style.display = 'none';
+        });
+    });
+    
+    document.querySelectorAll(`.stat-${days}`).forEach(el => {
+        el.style.display = '';
+    });
+    
+    console.log(`Switched to ${days}-day view`);
+}
+
+// Update your loadStatsForPeriod function to also fetch game history
+
+async function loadStatsForPeriod(days) {
+    try {
+        const homeId = window.TEAM_DATA.homeId;
+        const awayId = window.TEAM_DATA.awayId;
+        
+        console.log(`Making API requests for ${days}-day stats`);
+        
+        // Fetch both stats and game history in parallel
+        const [statsResponse, historyResponse] = await Promise.all([
+            fetch(`/api/load-stats/${homeId}/${awayId}/${days}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            }),
+            fetch(`/api/game-history/${homeId}/${awayId}/${days}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+        ]);
+        
+        if (!statsResponse.ok || !historyResponse.ok) {
+            throw new Error(`Server error`);
+        }
+        
+        const statsData = await statsResponse.json();
+        const historyData = await historyResponse.json();
+        
+        console.log('Stats data:', statsData);
+        console.log('History data:', historyData);
+        
+        // Update tables with stats
+        updateTablesWithStats(statsData, days);
+        
+        // Update team comparison stats
+        if (statsData.home_rolling_stats && statsData.away_rolling_stats) {
+            updateTeamComparisonStats(statsData, days);
+        }
+        
+        // NEW: Update game history display
+        updateGameHistory(historyData, days);
+        
+        loadedPeriods.push(days.toString());
+        
+        console.log(`Successfully loaded and updated ${days}-day stats`);
+        
+    } catch (error) {
+        console.error(`Error loading ${days}-day stats:`, error);
+        throw error;
+    }
+}
+
+// NEW: Function to update game history display
+function updateGameHistory(historyData, days) {
+    console.log(`Updating game history for ${days}-day period`);
+    
+    // Update away team
+    const awayCard = document.querySelector(`.stat-${days} .team-card:first-child`);
+    if (awayCard) {
+        updateTeamGameHistory(awayCard, historyData, 'away', days);
+    }
+    
+    // Update home team
+    const homeCard = document.querySelector(`.stat-${days} .team-card:last-child`);
+    if (homeCard) {
+        updateTeamGameHistory(homeCard, historyData, 'home', days);
+    }
+}
+
+function updateTeamGameHistory(cardElement, historyData, teamType, days) {
+    // Find or create game history container
+    let historyContainer = cardElement.querySelector('.game-history-container');
+    if (!historyContainer) {
+        historyContainer = document.createElement('div');
+        historyContainer.className = 'game-history-container';
+        
+        // Insert after the team name (h4) and before the stats
+        const teamName = cardElement.querySelector('h4');
+        const nextElement = teamName.nextElementSibling;
+        cardElement.insertBefore(historyContainer, nextElement);
+    }
+    
+    // Clear existing content
+    historyContainer.innerHTML = '';
+    
+    if (days === 7 && historyData[`${teamType}_games`]) {
+        // Create game history display for 7-day view
+        const gameHistory = document.createElement('div');
+        gameHistory.className = 'game-history';
+        
+        historyData[`${teamType}_games`].forEach(game => {
+            const gameResult = document.createElement('div');
+            gameResult.className = 'game-result';
+            
+            gameResult.innerHTML = `
+                <div class="team-logo-small">${game.opponent_abbr}</div>
+                <div class="result-emoji">${game.result === 'W' ? '✅' : '❌'}</div>
+                <div class="game-date">${game.date}</div>
+            `;
+            
+            gameHistory.appendChild(gameResult);
+        });
+        
+        historyContainer.appendChild(gameHistory);
+    } else {
+        // Show record for 10 and 21 day views
+        const record = historyData[`${teamType}_record`];
+        if (record) {
+            const recordDiv = document.createElement('div');
+            recordDiv.className = 'season-record';
+            recordDiv.textContent = `(${record})`;
+            historyContainer.appendChild(recordDiv);
+        }
+    }
+}
+
+function updateTeamComparisonStats(data, days) {
+    try {
+        const awayStatElements = document.querySelectorAll(`.stat-${days} .team-card:first-child .stat-value`);
+        if (awayStatElements.length >= 6 && data.away_rolling_stats) {
+            awayStatElements[0].textContent = data.away_rolling_stats.AVG || '.000';
+            awayStatElements[1].textContent = data.away_rolling_stats.OBP || '.000';
+            awayStatElements[2].textContent = data.away_rolling_stats.SLG || '.000';
+            awayStatElements[3].textContent = data.away_rolling_stats.HR || '0';
+            awayStatElements[4].textContent = data.away_rolling_stats.AVG_HITS || '0.0';
+            awayStatElements[5].textContent = data.away_rolling_stats.AVG_K || '0.0';
+        }
+        
+        const homeStatElements = document.querySelectorAll(`.stat-${days} .team-card:last-child .stat-value`);
+        if (homeStatElements.length >= 6 && data.home_rolling_stats) {
+            homeStatElements[0].textContent = data.home_rolling_stats.AVG || '.000';
+            homeStatElements[1].textContent = data.home_rolling_stats.OBP || '.000';
+            homeStatElements[2].textContent = data.home_rolling_stats.SLG || '.000';
+            homeStatElements[3].textContent = data.home_rolling_stats.HR || '0';
+            homeStatElements[4].textContent = data.home_rolling_stats.AVG_HITS || '0.0';
+            homeStatElements[5].textContent = data.home_rolling_stats.AVG_K || '0.0';
+        }
+        
+        console.log(`Updated team comparison stats for ${days}-day period`);
+        
+    } catch (error) {
+        console.error('Error updating team comparison stats:', error);
+    }
+}
+
+function updateTablesWithStats(data, days) {
+    console.log(`🔥 Updating tables for ${days}-day period 🔥`);
+    
+    const currentWindows = document.querySelectorAll(`.stat-${days}`);
+    
+    currentWindows.forEach(window => {
+        const tables = window.querySelectorAll('.stats-table');
+        
+        tables.forEach(table => {
+            const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
+            
+            const isPitcher = headers.includes('ERA') && headers.includes('WHIP');
+            const isBatter = headers.includes('Pos') && headers.includes('AVG');
+            
+            const teamColumn = table.closest('.team-column');
+            const allColumns = Array.from(document.querySelectorAll('.team-column'));
+            const isAway = allColumns.indexOf(teamColumn) === 0;
+            
+            if (isPitcher) {
+                const pitcherData = isAway ? data.away_pitchers : data.home_pitchers;
+                if (pitcherData?.length) {
+                    // Sort pitchers by GS (games started) in descending order
+                    const sortedPitchers = [...pitcherData].sort((a, b) => {
+                        const gsA = parseInt(a.stats?.gs || 0);
+                        const gsB = parseInt(b.stats?.gs || 0);
+                        return gsB - gsA; // Descending order
+                    });
+                    console.log(`Updating ${isAway ? 'AWAY' : 'HOME'} pitcher table with ${sortedPitchers.length} players (sorted by GS)`);
+                    updatePitcherTable(table, sortedPitchers, days);
+                }
+            } else if (isBatter) {
+                const batterData = isAway ? data.away_batters : data.home_batters;
+                if (batterData?.length) {
+                    // Sort batters by AB (at-bats) in descending order
+                    const sortedBatters = [...batterData].sort((a, b) => {
+                        const abA = parseInt(a.stats?.ab || 0);
+                        const abB = parseInt(b.stats?.ab || 0);
+                        return abB - abA; // Descending order
+                    });
+                    console.log(`Updating ${isAway ? 'AWAY' : 'HOME'} batter table with ${sortedBatters.length} players (sorted by AB)`);
+                    updateBatterTable(table, sortedBatters, days);
+                }
+            }
+        });
+    });
+}
+
+function updatePitcherTable(table, pitchers, days) {
+    console.log(`⚾ Updating pitcher table for ${days}-day period`);
+
+    // ADD THIS DEBUG LINE
+    console.log('Raw pitcher data:', JSON.stringify(pitchers.slice(0, 2), null, 2));
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    const rows = tbody.querySelectorAll('tr');
+    
+    pitchers.slice(0, rows.length).forEach((pitcher, index) => {
+        const row = rows[index];
+        const cells = row.querySelectorAll('td');
+        
+        if (cells.length < 10) return;  // Updated for 10 columns
+        
+        const stats = pitcher.stats || {
+            era: '0.00', 
+            whip: '0.00', 
+            h: 0,      // Added
+            r: 0,      // Added
+            k: 0, 
+            bb: 0, 
+            ip: '0.0', 
+            gs: 0, 
+            sv: 0
+        };
+        
+        console.log(`Pitcher ${pitcher.name} stats:`, stats);
+        
+        // Clear loading classes and existing conditional formatting
+        for (let i = 1; i < cells.length; i++) {
+            cells[i].classList.remove('loading-message', 'stat-good', 'stat-bad', 'stat-light-red');
+            cells[i].className = '';
+        }
+        
+        // Update all stats
+        cells[1].textContent = stats.era || '0.00';       // ERA
+        cells[2].textContent = stats.whip || '0.00';      // WHIP
+        cells[3].textContent = stats.h || '0';            // Hits allowed
+        cells[4].textContent = stats.r || '0';            // Runs allowed
+        cells[5].textContent = stats.k || '0';            // Strikeouts
+        cells[6].textContent = stats.bb || '0';           // Walks
+        cells[7].textContent = stats.ip || '0.0';         // Innings pitched
+        cells[8].textContent = stats.gs || '0';           // Games started
+        cells[9].textContent = stats.sv || '0';           // Saves
+        
+        // Apply conditional formatting
+        
+        // ERA formatting
+        const era_val = parseFloat(stats.era || 0);
+        if (era_val < 3.00 && era_val > 0) {
+            cells[1].classList.add('stat-good');
+        } else if (era_val > 5.00) {
+            cells[1].classList.add('stat-bad');
+        }
+        
+        // WHIP formatting (updated threshold)
+        const whip_val = parseFloat(stats.whip || 0);
+        if (whip_val < 1.20 && whip_val > 0) {
+            cells[2].classList.add('stat-good');
+        } else if (whip_val > 1.40) {  // Updated from 1.50 to 1.40
+            cells[2].classList.add('stat-bad');
+        }
+        
+        // Hits allowed formatting (NEW)
+        const hits_val = parseInt(stats.h || 0);
+        if (hits_val > 5) {
+            cells[3].classList.add('stat-light-red');
+        }
+        
+        // Runs allowed formatting (NEW)
+        const runs_val = parseInt(stats.r || 0);
+        if (runs_val > 4) {
+            cells[4].classList.add('stat-bad');
+        }
+    });
+    
+    console.log(`✅ Pitcher table updated with enhanced stats and formatting`);
+}
+
+function updateBatterTable(table, batters, days) {
+    console.log(`🏏 Updating batter table for ${days}-day period`);
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    const rows = tbody.querySelectorAll('tr');
+    
+    batters.slice(0, rows.length).forEach((batter, index) => {
+        const row = rows[index];
+        const cells = row.querySelectorAll('td');
+        
+        if (cells.length < 9) return;
+        
+        const stats = batter.stats || {
+            avg: '.000', slg: '.000', obp: '.000', hr: 0, rbi: 0, h: 0, ab: 0
+        };
+        
+        for (let i = 2; i < cells.length; i++) {
+            cells[i].classList.remove('loading-message');
+            cells[i].className = '';
+        }
+        
+        cells[2].textContent = parseFloat(stats.avg || 0).toFixed(3);
+        cells[3].textContent = parseFloat(stats.slg || 0).toFixed(3);
+        cells[4].textContent = parseFloat(stats.obp || 0).toFixed(3);
+        cells[5].textContent = stats.hr || '0';
+        cells[6].textContent = stats.rbi || '0';
+        cells[7].textContent = stats.h || '0';
+        cells[8].textContent = stats.ab || '0';
+        
+        const avg_val = parseFloat(stats.avg || 0);
+        if (avg_val > 0.265) {
+            cells[2].classList.add('stat-good');
+        } else if (avg_val < 0.240 && avg_val > 0) {
+            cells[2].classList.add('stat-bad');
+        }
+    });
+    
+    console.log(`✅ Batter table updated`);
+}
+
+function showErrorMessage(message) {
+    console.error('Showing error:', message);
+    
+    const existingError = document.getElementById('error-message');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.id = 'error-message';
+    errorDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #dc3545;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 1000;
+        max-width: 300px;
+        font-size: 14px;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    errorDiv.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 5px;">Error</div>
+        <div>${message}</div>
+        <div style="margin-top: 10px; text-align: right;">
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: none; border: 1px solid white; color: white; padding: 2px 8px; border-radius: 4px; cursor: pointer;">
+                ✕
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(errorDiv);
+    
+    setTimeout(() => {
+        if (errorDiv && errorDiv.parentNode) {
+            errorDiv.remove();
+        }
+    }, 8000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM ready - initializing MLB Stats Tracker');
+    console.log('Team data:', window.TEAM_DATA);
+    
+    if (!window.TEAM_DATA || !window.TEAM_DATA.homeId || !window.TEAM_DATA.awayId) {
+        console.error('Invalid team data');
+        showErrorMessage('Unable to load team data. Please refresh the page.');
+        return;
+    }
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            if (isLoading) {
+                console.log('Click ignored - already loading');
+                return;
+            }
+            
+            const dayMatch = this.id.match(/tab-(\d+)/);
+            if (dayMatch) {
+                const days = parseInt(dayMatch[1]);
+                console.log(`Tab clicked: ${days} days`);
+                setStatWindow(days);
+            }
+        });
+    });
+    
+    console.log('Event handlers attached');
+});
+
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
