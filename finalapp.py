@@ -796,7 +796,7 @@ def load_player_stats_batch(players, stat_type, days=7, max_workers=5):
         for future in as_completed(future_to_player):
             player = future_to_player[future]
             try:
-                stats = future.result(timeout=10)  # 10 second timeout per request
+                stats = future.result(timeout=5)  # 10 second timeout per request
                 player['stats'] = {str(days): stats}
                 
                 # ADD VALIDATION HERE - This is the key addition
@@ -827,7 +827,7 @@ def load_player_stats_by_games(players, stat_type, num_games=7, max_workers=5):
         for future in as_completed(future_to_player):
             player = future_to_player[future]
             try:
-                stats = future.result(timeout=10)  # 10 second timeout per request
+                stats = future.result(timeout=5)  # 10 second timeout per request
                 player['stats'] = {str(num_games): stats}
                 
                 # ADD VALIDATION HERE
@@ -861,7 +861,7 @@ def load_pitcher_stats_by_starts(players, num_starts=2, days=None, max_workers=5
         for future in as_completed(future_to_player):
             player = future_to_player[future]
             try:
-                stats = future.result(timeout=10)  # 10 second timeout per request
+                stats = future.result(timeout=5)  # 10 second timeout per request
                 player['stats'] = {stats_key: stats}
                 
                 # ADD VALIDATION HERE - This is the key addition
@@ -1015,10 +1015,10 @@ def build_team_data_optimized(team_name, roster, team_stats, team_id):
         
         # Load 7-day stats in parallel for better performance
         if roster['batters']:
-            team_data['fullRoster']['batters'] = load_player_stats_by_games(roster['batters'][:15], 'hitting', 7, max_workers=3)
+            team_data['fullRoster']['batters'] = load_player_stats_by_games(roster['batters'][:15], 'hitting', 7, max_workers=8)
         
         if roster['pitchers']:
-            team_data['fullRoster']['pitchers'] = load_player_stats_batch(roster['pitchers'][:15], 'pitching', 7, max_workers=3)
+            team_data['fullRoster']['pitchers'] = load_player_stats_batch(roster['pitchers'][:15], 'pitching', 7, max_workers=8)
         
         # Initialize other periods with empty stats (loaded on-demand)
         for batter in team_data['fullRoster']['batters']:
@@ -1317,12 +1317,12 @@ def load_stats_api(home_id, away_id, days):
         num_starts = pitcher_starts_map[days]
         
         # Load batter stats (keep existing logic for batters)
-        home_batters = load_player_stats_by_games(home_roster['batters'][:15], 'hitting', days, max_workers=3)
-        away_batters = load_player_stats_by_games(away_roster['batters'][:15], 'hitting', days, max_workers=3)
+        home_batters = load_player_stats_by_games(home_roster['batters'][:15], 'hitting', days, max_workers=5)
+        away_batters = load_player_stats_by_games(away_roster['batters'][:15], 'hitting', days, max_workers=5)
         
         # Load pitcher stats using new starts-based logic - PASS DAYS PARAMETER
-        home_pitchers = load_pitcher_stats_by_starts(home_roster['pitchers'][:15], num_starts, days, max_workers=3)
-        away_pitchers = load_pitcher_stats_by_starts(away_roster['pitchers'][:15], num_starts, days, max_workers=3)
+        home_pitchers = load_pitcher_stats_by_starts(home_roster['pitchers'][:15], num_starts, days, max_workers=5)
+        away_pitchers = load_pitcher_stats_by_starts(away_roster['pitchers'][:15], num_starts, days, max_workers=5)
         
         # Calculate rolling team stats with team-specific variance
         random.seed(home_id + days)  # Consistent seed for reproducible stats
