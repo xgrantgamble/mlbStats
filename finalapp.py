@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import random
 import traceback
+import pickle
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'
@@ -992,7 +993,23 @@ def calculate_rolling_team_stats(batters, pitchers, period):
         }
     
 def build_team_data_optimized(team_name, roster, team_stats, team_id):
-    """Build team data with optimized performance and better error handling"""
+    """Wrapper that handles caching"""
+    # Check cache first by using pickled versions
+    roster_pickle = pickle.dumps(roster)
+    stats_pickle = pickle.dumps(team_stats)
+    
+    return build_and_cache_team_data(
+        team_name, roster_pickle, stats_pickle, team_id
+    )
+
+@cache.memoize(timeout=86400)
+def build_and_cache_team_data(team_name, roster_pickle, stats_pickle, team_id):
+    """Cached version of build_team_data_optimized"""
+    roster = pickle.loads(roster_pickle)
+    team_stats = pickle.loads(stats_pickle)
+    
+    # Copy the ENTIRE body of your existing build_team_data_optimized function here
+    # Starting from logger.info line to the return statement
     logger.info(f"Building optimized team data for {team_name}")
     
     try:
@@ -1001,7 +1018,7 @@ def build_team_data_optimized(team_name, roster, team_stats, team_id):
             'id': team_id,
             'lineup': [],
             'fullRoster': {
-                'batters': roster['batters'][:15],  # Limit to 15 to prevent duplicates
+                'batters': roster['batters'][:15],
                 'pitchers': roster['pitchers'][:15]
             },
             'starter': {},
@@ -1060,18 +1077,16 @@ def build_team_data_optimized(team_name, roster, team_stats, team_id):
         for period in ['7', '10', '21']:
             try:
                 if period == '7':
-                    # Use actual loaded stats
                     rolling_stats = calculate_rolling_team_stats(
                         team_data['fullRoster']['batters'], 
                         team_data['fullRoster']['pitchers'], 
                         period
                     )
                 else:
-                    # Generate realistic but different stats for each team and period
-                    team_seed = team_id + int(period)  # Unique seed per team/period
+                    team_seed = team_id + int(period)
                     random.seed(team_seed)
                     
-                    base_avg = 0.240 + (random.random() * 0.040)  # .240-.280
+                    base_avg = 0.240 + (random.random() * 0.040)
                     base_obp = base_avg + 0.050 + (random.random() * 0.030)
                     base_slg = base_avg + 0.080 + (random.random() * 0.080)
                     
@@ -1087,7 +1102,6 @@ def build_team_data_optimized(team_name, roster, team_stats, team_id):
                 team_data['rollingTeamStats'][period] = rolling_stats
             except Exception as e:
                 logger.error(f"Error calculating rolling stats for {period} days: {e}")
-                # Fallback with team-specific variance
                 team_data['rollingTeamStats'][period] = {
                     'AVG': f"{0.250 + (team_id % 10) * 0.005:.3f}",
                     'OBP': f"{0.320 + (team_id % 10) * 0.003:.3f}",
@@ -1102,7 +1116,6 @@ def build_team_data_optimized(team_name, roster, team_stats, team_id):
         
     except Exception as e:
         logger.error(f"Error building team data for {team_name}: {e}")
-        # Return minimal team data on error
         return {
             'name': team_name,
             'id': team_id,
@@ -1288,6 +1301,7 @@ def debug_routes():
 
 # Update your API route to use the new logic
 @app.route('/api/load-stats/<int:home_id>/<int:away_id>/<int:days>')
+@cache.cached(timeout=86400, key_prefix='load_stats')
 def load_stats_api(home_id, away_id, days):
     """Load stats for specific time period on-demand"""
     try:
@@ -1817,7 +1831,7 @@ def debug_check_display():
         return jsonify({'error': str(e)}), 500
 
 def warm_cache_on_startup():
-    """Pre-load ALL today's games into cache on startup"""
+    """Pre-load ALL today's games data into cache on startup"""
     with app.app_context():
         try:
             print("🔥 Warming cache for ALL today's games...")
@@ -1831,15 +1845,38 @@ def warm_cache_on_startup():
                         print(f"⏭️  Skipping postponed game: {game['away_team']} @ {game['home_team']}")
                         continue
                     
-                    print(f"Loading game {i+1}/{len(games)}: {game['away_team']} @ {game['home_team']}...", end='')
+                    print(f"Loading game {i+1}/{len(games)}: {game['away_team']} @ {game['home_team']}...")
                     
-                    MLBStatsAPI.get_team_roster(game['home_id'])
-                    MLBStatsAPI.get_team_roster(game['away_id'])
-                    MLBStatsAPI.get_team_stats(game['home_id'])
-                    MLBStatsAPI.get_team_stats(game['away_id'])
+                    # Cache basic data
+                    home_roster = MLBStatsAPI.get_team_roster(game['home_id'])
+                    away_roster = MLBStatsAPI.get_team_roster(game['away_id'])
+                    home_stats = MLBStatsAPI.get_team_stats(game['home_id'])
+                    away_stats = MLBStatsAPI.get_team_stats(game['away_id'])
                     
-                    print(" ✓")
-                    time.sleep(0.5)
+                    # Pre-build and cache complete team data for 7-day view
+                    home_team_data = build_team_data_optimized(
+                        game['home_team'], home_roster, home_stats, game['home_id']
+                    )
+                    away_team_data = build_team_data_optimized(
+                        game['away_team'], away_roster, away_stats, game['away_id']
+                    )
+                    
+                    # Pre-cache 10 and 21 day stats
+                    print(f"  Pre-caching 10/21 day stats...")
+                    
+                    # Simulate API calls to cache the results
+                    for days in [10, 21]:
+                        try:
+                            # Use the test client to internally call your API
+                            with app.test_client() as client:
+                                response = client.get(f"/api/load-stats/{game['home_id']}/{game['away_id']}/{days}")
+                                if response.status_code == 200:
+                                    print(f"    ✓ Cached {days}-day stats")
+                        except Exception as e:
+                            print(f"    ✗ Failed to cache {days}-day stats: {e}")
+                    
+                    print(f" ✓ Cached all data for {game['away_team']} @ {game['home_team']}")
+                    time.sleep(2)  # Respect rate limits
                     
                 except Exception as e:
                     print(f" ✗ Failed: {e}")
