@@ -992,24 +992,9 @@ def calculate_rolling_team_stats(batters, pitchers, period):
             'AVG_K': f"{2.8 + team_variance * 0.3:.1f}"
         }
     
+@cache.memoize(timeout=86400, make_name=lambda fname, team_name, roster, team_stats, team_id: f"team_data_{team_id}")
 def build_team_data_optimized(team_name, roster, team_stats, team_id):
-    """Wrapper that handles caching"""
-    # Check cache first by using pickled versions
-    roster_pickle = pickle.dumps(roster)
-    stats_pickle = pickle.dumps(team_stats)
-    
-    return build_and_cache_team_data(
-        team_name, roster_pickle, stats_pickle, team_id
-    )
-
-@cache.memoize(timeout=86400)
-def build_and_cache_team_data(team_name, roster_pickle, stats_pickle, team_id):
-    """Cached version of build_team_data_optimized"""
-    roster = pickle.loads(roster_pickle)
-    team_stats = pickle.loads(stats_pickle)
-    
-    # Copy the ENTIRE body of your existing build_team_data_optimized function here
-    # Starting from logger.info line to the return statement
+    """Build team data with optimized performance and better error handling"""
     logger.info(f"Building optimized team data for {team_name}")
     
     try:
