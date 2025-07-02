@@ -1861,17 +1861,28 @@ def warm_cache_on_startup():
                         game['away_team'], away_roster, away_stats, game['away_id']
                     )
                     
-                    # Pre-cache 10 and 21 day stats
+                    # Pre-cache 10 and 21 day stats by calling the function directly
                     print(f"  Pre-caching 10/21 day stats...")
                     
-                    # Simulate API calls to cache the results
                     for days in [10, 21]:
                         try:
-                            # Use the test client to internally call your API
-                            with app.test_client() as client:
-                                response = client.get(f"/api/load-stats/{game['home_id']}/{game['away_id']}/{days}")
-                                if response.status_code == 200:
-                                    print(f"    ✓ Cached {days}-day stats")
+                            # Directly call the load_stats_api function logic
+                            # Map days to number of starts for pitchers
+                            pitcher_starts_map = {
+                                7: 2,   # Last 2 starts
+                                10: 3,  # Last 3 starts  
+                                21: 4   # Last 4 starts
+                            }
+                            
+                            num_starts = pitcher_starts_map[days]
+                            
+                            # Load stats (this will cache them automatically)
+                            home_batters = load_player_stats_by_games(home_roster['batters'][:15], 'hitting', days, max_workers=8)
+                            away_batters = load_player_stats_by_games(away_roster['batters'][:15], 'hitting', days, max_workers=8)
+                            home_pitchers = load_pitcher_stats_by_starts(home_roster['pitchers'][:15], num_starts, days, max_workers=8)
+                            away_pitchers = load_pitcher_stats_by_starts(away_roster['pitchers'][:15], num_starts, days, max_workers=8)
+                            
+                            print(f"    ✓ Cached {days}-day stats")
                         except Exception as e:
                             print(f"    ✗ Failed to cache {days}-day stats: {e}")
                     
